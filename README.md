@@ -31,7 +31,7 @@ Known differences, stated on the page as well:
 - The DreamDEX leg is a resting limit order (an IOC order with nothing to match reverts on chain); the exchanges get IOC orders. All are priced away from the market: 3% on DreamDEX, 2% on the exchanges, or less where an exchange's price band is tighter.
 - Order sizes are each venue's minimum. Binance and Bybit BTC need about 60 USD of notional; a computed size above 100 USD is refused (`MAX_NOTIONAL_USD`). A venue without credentials on the server is left out of the race.
 - The exchange accounts are small standard accounts on public API endpoints, with no fee tier upgrades and no colocation.
-- Binance is not in the race yet: Binance deletes trading API keys that have no IP allowlist, and the server has no fixed IP yet.
+- The server leaves Vercel through fixed outbound IPs (Vercel Static IPs, region `hnd1`) for every venue, because Binance only accepts trading API keys tied to an IP allowlist.
 - If the event loop stalls by more than 25 ms during a round, the round is run again (at most three attempts).
 - The replay on the page is slowed down and gives the first milliseconds more screen time; each horse reaches the line exactly at its venue's confirmation time and the clock shows real milliseconds.
 

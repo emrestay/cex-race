@@ -14,8 +14,8 @@ if ! command -v vercel >/dev/null 2>&1; then
 fi
 command -v vercel >/dev/null 2>&1 || { echo "Vercel CLI not found. Install it with: npm i -g vercel"; exit 1; }
 vercel whoami >/dev/null 2>&1 || { echo "Vercel CLI is not logged in. Run: vercel login"; exit 1; }
-# Binance is left out until its key can trade from a fixed IP (Binance deletes trading keys without an IP list).
-for n in DREAMDEX_KEY BYBIT_API_KEY BYBIT_API_SECRET OKX_API_KEY OKX_API_SECRET OKX_PASSPHRASE BITGET_API_KEY BITGET_API_SECRET BITGET_PASSPHRASE; do
+# Binance needs the project's Static IPs on its key allowlist (Binance deletes trading keys without an IP list).
+for n in DREAMDEX_KEY BINANCE_API_KEY BINANCE_API_SECRET BYBIT_API_KEY BYBIT_API_SECRET OKX_API_KEY OKX_API_SECRET OKX_PASSPHRASE BITGET_API_KEY BITGET_API_SECRET BITGET_PASSPHRASE; do
   v=$(security find-generic-password -s perp-race -a "$n" -w 2>/dev/null) || { echo "skip    $n (not in Keychain)"; continue; }
   vercel env rm "$n" "$TARGET" --yes >/dev/null 2>&1
   # Preview needs an explicit empty Git branch argument, which means "all preview branches".
