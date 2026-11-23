@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perp Race · DreamDEX vs the CEXs</title>
+<meta name="description" content="DreamDEX races the big exchanges: one real order each, fired at the same instant. First to confirm wins. Open source.">
+<meta property="og:title" content="Perp Race · DreamDEX vs the CEXs">
+<meta property="og:description" content="DreamDEX races the big exchanges: one real order each, fired at the same instant. First to confirm wins.">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#a9dcea;--sky2:#d7f0f6;--cloud:#fffaf0;--bush:#86b15a;--bush2:#6f9a48;--grass:#9cc96b;--dirt:#e2b07a;--ink:#3b2a1e;--mute:#8a7563;--card:#fffdf8;--line:#ecdcc8;
+ --long:#58b368;--short:#ef6f6c;--purple:#9b7bea;--pink:#f7a8c4;--gold:#f5c542;
+ --font:"Fredoka",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{color:var(--ink);font:17px/1.45 var(--font);background:#f6efe2;-webkit-font-smoothing:antialiased}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:#6b4fd0}
+/* sky hero */
+.sky{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 78%);padding:14px 16px 0}
+.sky .cloud{position:absolute;opacity:.95;animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(-30px)}to{transform:translateX(30px)}}
+.sky .bushes{position:relative;height:70px;margin:0 -16px}
+.sky .bushes svg{position:absolute;left:0;bottom:0;width:100%;height:100%}
+.inner{max-width:1160px;margin:0 auto;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font:600 13px var(--font);padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.75);color:var(--mute);box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.pill b{color:var(--ink)}.pill.on{color:#2f8a42}
+.snd{border:0;cursor:pointer;font:600 13px var(--font)}
+.brandmini{font:700 15px var(--font);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.12);letter-spacing:.04em}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center;padding:8px 0 4px}
+.logo{display:block;width:min(520px,100%);height:auto;margin:0 0 6px -6px}
+h1{font:700 clamp(30px,4.4vw,48px)/1.05 var(--font);margin:0 0 10px;color:#fff;text-shadow:0 3px 0 rgba(90,60,140,.35)}
+.lede{font-size:18px;line-height:1.4;max-width:520px;margin:0;color:#2f4b55}
+.lede b{color:#1f3a44}
+.kicker{display:inline-block;font:600 13px var(--font);letter-spacing:.06em;color:#fff;background:var(--purple);padding:4px 12px;border-radius:999px;margin-bottom:10px;box-shadow:0 2px 0 rgba(0,0,0,.1)}
+/* ticket */
+.ticket{background:var(--card);border-radius:22px;padding:16px;box-shadow:0 6px 0 rgba(120,90,60,.15),0 16px 30px rgba(60,90,110,.18);border:3px solid #fff}
+.thead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font:700 15px var(--font)}
+.thead span:last-child{background:#fff1c9;color:#a57a12;padding:2px 10px;border-radius:999px;font-size:13px}
+.lbl{display:block;font:600 12.5px var(--font);letter-spacing:.04em;color:var(--mute);margin-bottom:5px}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.chip{font:600 15px var(--font);padding:7px 4px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.chip.on{background:var(--purple);border-color:var(--purple);color:#fff;box-shadow:0 3px 0 #7a5cc9}
+.pxrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+#px{font:700 32px/1 var(--mono);color:var(--ink)}
+input[type=number]{width:92px;background:#fff;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:8px 10px;font:700 16px var(--mono)}
+.btns{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+button{cursor:pointer;border:0;font-family:var(--font)}
+.fire{border-radius:16px;padding:12px 10px;font:700 21px var(--font);letter-spacing:.03em;color:#fff;transition:transform .06s,filter .15s,opacity .15s}
+.fire:hover{filter:brightness(1.05)}
+.fire:active{transform:translateY(3px);box-shadow:none!important}
+.fire:disabled,.ghost:disabled{opacity:.45;cursor:default}
+.long{background:var(--long);box-shadow:0 4px 0 #3f8f4e}.short{background:var(--short);box-shadow:0 4px 0 #c9514f}
+.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:16px;padding:0 12px;font:700 15px var(--font)}
+#note{margin-top:10px;color:var(--mute);font:500 13px var(--mono);min-height:19px}
+main{max-width:1160px;margin:0 auto;padding:0 16px 70px}
+/* track */
+.course{margin-top:-2px;background:var(--grass);border-radius:0 0 26px 26px;padding:0 0 12px;box-shadow:0 14px 30px rgba(80,60,30,.18)}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px 10px}
+.chead h2{margin:0;font:700 22px var(--font);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.call{flex:1;min-width:200px;text-align:right;font:700 16px var(--font);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.18);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call.live{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.45}}
+#track{display:block;width:100%;height:600px}
+.cfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#fff;font:500 14px var(--font);padding:8px 16px 0;text-shadow:0 1px 0 rgba(0,0,0,.15)}
+/* result */
+#verdict{margin-top:18px}
+.wait{font:600 16px var(--font);color:var(--mute);padding:12px 4px;animation:blink 1.1s infinite}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.result{background:var(--card);border-radius:24px;border:3px solid #fff;box-shadow:0 6px 0 rgba(120,90,60,.12),0 16px 30px rgba(80,60,30,.12);overflow:hidden;animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;background:#fff6dd}
+.rhead .t{font:700 20px var(--font)}
+.rhead .t em{font-style:normal;color:var(--mute);font-weight:500}
+.stamp{font:700 13px var(--font);letter-spacing:.08em;color:#fff;background:var(--purple);padding:4px 12px;border-radius:999px;transform:rotate(-3deg);box-shadow:0 3px 0 #7a5cc9}
+.winner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px 4px}
+.winner .cup{font-size:44px;line-height:1}
+.winner .nm{font:700 clamp(30px,5vw,50px)/1 var(--font)}
+.winner .tm{font:700 clamp(26px,4.2vw,42px)/1 var(--mono);color:#e0952b}
+.winner .tm small{font:500 15px var(--font);color:var(--mute);margin-left:6px}
+.board{list-style:none;margin:6px 0 0;padding:0 10px 12px}
+.board li{display:grid;grid-template-columns:52px minmax(130px,1fr) minmax(90px,.7fr) minmax(80px,.6fr) minmax(120px,.9fr) minmax(150px,1.2fr);gap:12px;align-items:center;padding:9px 10px;border-radius:16px;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d)}
+.board li:nth-child(odd){background:#fbf5ea}
+.pos{font:700 17px var(--font);color:var(--mute);text-align:center;background:#fff;border-radius:999px;padding:3px 0;border:2px solid var(--line)}
+.board li.first .pos{background:var(--gold);border-color:var(--gold);color:#6b4b00}
+.hn{display:flex;align-items:center;gap:10px;font:700 17px var(--font)}
+.hn i{width:16px;height:16px;border-radius:50%;background:var(--c);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.hn small{display:block;font:500 12.5px var(--font);color:var(--mute)}
+.rt{font:700 17px var(--mono)}
+.mg{font:500 13px var(--mono);color:var(--mute)}
+.tg{justify-self:start;font:600 12.5px var(--font);padding:3px 10px;border-radius:999px;background:#f1ebe0;color:var(--mute);white-space:nowrap}
+.tg.real{background:#dff3e2;color:#2f8a42}
+.pf{font:500 12.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf.dim{color:#b3a493}
+.rfoot{margin:0;padding:6px 18px 14px;color:var(--mute);font-size:14.5px}
+/* sections */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.panel{background:var(--card);border-radius:22px;padding:16px 18px;box-shadow:0 4px 0 rgba(120,90,60,.1)}
+.ptitle{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px;font:700 22px var(--font)}
+.ptitle small{font:500 13px var(--font);color:var(--mute)}
+.tote div{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:7px 2px;border-bottom:2px dashed var(--line)}
+.tote div:last-child{border-bottom:0}
+.tote i{width:14px;height:14px;border-radius:50%}
+.lg{width:20px;height:20px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 0 0 2px var(--c,#eee);vertical-align:-5px;margin-right:8px;flex:none}
+.tote .lg{margin-right:0}
+.tote span{font:600 16px var(--font)}
+.tote b{font:700 17px var(--mono);transition:color .3s}
+.tote b.tick{color:#e0952b}
+.rules{counter-reset:r;list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.rules li{counter-increment:r;display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:start}
+.rules li:before{content:counter(r);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--pink);color:#fff;font:700 16px var(--font);box-shadow:0 3px 0 #e07fa3}
+.rules b{display:block;font:600 17px var(--font)}
+.rules p{margin:0;color:#5f4e40;font-size:15.5px;line-height:1.35}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15.5px}
+th,td{padding:9px 8px;border-bottom:2px dashed var(--line);text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{font:600 13px var(--font);color:var(--mute)}
+th:first-child,td:first-child{text-align:left}
+td i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px}
+td.basis{color:var(--mute);white-space:normal;text-align:left}
+table.m td,table.m th{text-align:left;white-space:normal;vertical-align:top}
+details{margin-top:18px}
+summary{cursor:pointer;font:700 20px var(--font);list-style:none;display:flex;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"+";display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font:700 18px var(--font)}
+details[open] summary:before{content:"−"}
+details p{color:#5f4e40}
+code{font:13px var(--mono);background:#f1ebe0;padding:1px 5px;border-radius:6px}
+.burner{margin-top:12px;padding:12px 14px;border:2px dashed var(--line);border-radius:14px;font-size:14.5px;color:var(--mute);word-break:break-all}
+.burner b{color:var(--ink)}
+.copy{margin-left:8px;padding:2px 8px;border-radius:8px;border:2px solid var(--line);background:#fff;color:var(--ink);font:600 12px var(--font)}
+.rep{margin-left:6px;padding:1px 8px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--ink);font:600 11.5px var(--font);vertical-align:1px}
+.pf small{color:var(--mute);font:500 11px var(--font)}
+dialog{border:0;border-radius:22px;padding:18px 20px;max-width:min(560px,92vw);background:var(--card);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(40,30,20,.35)}
+dialog h3{margin:0 0 4px;font:700 20px var(--font)}
+dialog pre{background:#f1ebe0;border-radius:12px;padding:12px;font:12.5px/1.5 var(--mono);overflow:auto;max-height:50vh;white-space:pre-wrap;word-break:break-all}
+.rw{margin:0 0 8px;color:var(--mute);font-size:14px}
+footer{margin-top:30px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--mute);font-size:15px}
+footer a{font-weight:600}
+@media (max-width:900px){.hero,.grid2{grid-template-columns:1fr}.board li{grid-template-columns:44px 1fr auto;row-gap:4px}.board .mg{display:none}.board .tg{grid-column:2}.board .pf{grid-column:2/-1}}
+@media (max-width:640px){#track{height:540px}.call{text-align:left}}
+</style>
+</head>
+<body>
+<section class="sky">
+  <svg class="cloud" style="left:4%;top:56px;animation-duration:9s;animation-direction:alternate" width="150" height="70" viewBox="0 0 150 70" aria-hidden="true"><path d="M25 62a22 22 0 0 1 3-43 30 30 0 0 1 55-6 24 24 0 0 1 40 14 20 20 0 0 1 2 35z" fill="#fffaf0"/></svg>
+  <svg class="cloud" style="right:6%;top:30px;animation-duration:12s;animation-direction:alternate-reverse" width="190" height="86" viewBox="0 0 150 70" aria-hidden="true"><path d="M25 62a22 22 0 0 1 3-43 30 30 0 0 1 55-6 24 24 0 0 1 40 14 20 20 0 0 1 2 35z" fill="#fffaf0"/></svg>
+  <svg class="cloud" style="left:44%;top:150px;animation-duration:10s;animation-direction:alternate" width="90" height="42" viewBox="0 0 150 70" aria-hidden="true"><path d="M25 62a22 22 0 0 1 3-43 30 30 0 0 1 55-6 24 24 0 0 1 40 14 20 20 0 0 1 2 35z" fill="#fffaf0" opacity=".85"/></svg>
+  <div class="inner">
+    <div class="top"><span class="brandmini">PERP RACE</span><div class="pills"><span class="pill" id="pLive">connecting...</span><span class="pill" id="pReal">real tx: off</span><button class="pill snd" id="snd" type="button">sound on</button></div></div>
+    <div class="hero">
+      <div>
+        <svg class="logo" viewBox="0 0 520 150" role="img" aria-label="Perp Race">
+          <g font-family="Fredoka, sans-serif" font-weight="700" text-anchor="middle">
+            <text x="260" y="98" font-size="92" fill="none" stroke="#5b3f8f" stroke-width="16" stroke-linejoin="round">PERP RACE</text>
+            <text x="260" y="98" font-size="92" fill="#fff">PERP RACE</text>
+          </g>
+          <g fill="#f5c542" stroke="#5b3f8f" stroke-width="3" stroke-linejoin="round"><path d="M28 30l6 12 13 2-10 9 3 13-12-7-12 7 3-13-10-9 13-2z"/><path d="M488 92l5 9 10 2-7 7 2 10-10-5-9 5 2-10-7-7 10-2z"/></g>
+          <g fill="#f7a8c4" stroke="#5b3f8f" stroke-width="3"><path d="M470 22c-6-8-18 0-10 9l10 9 10-9c8-9-4-17-10-9z"/><path d="M52 112c-5-7-15 0-8 7l8 8 8-8c7-7-3-14-8-7z"/></g>
+          <path d="M150 128q110 22 220 0" fill="none" stroke="#5b3f8f" stroke-width="5" stroke-linecap="round" opacity=".35"/>
+        </svg>
+        <span class="kicker" id="kick">Crypto perps · real orders</span>
+        <h1>Here we go again: DreamDEX vs the CEXs.</h1>
+        <p class="lede">An onchain order book lines up against Binance, Bybit, OKX and Bitget. <b>One real order each</b>, fired at the same instant on the market you pick. The first venue to confirm your order wins.</p>
+      </div>
+      <div class="ticket">
+        <div class="thead"><span>Your ticket</span><span id="raceNo">Race 1</span></div>
+        <span class="lbl">Choose a market</span>
+        <div class="chips" id="chips"></div>
+        <div class="pxrow">
+          <div><span class="lbl" id="pxl">BTC-PERP mark on DreamDEX</span><span id="px">...</span></div>
+          </div>
+        <div class="btns">
+          <button id="long" class="fire long">Long</button>
+          <button id="short" class="fire short">Short</button>
+          <button id="x10" class="ghost" title="Run ten races in a row">×10</button>
+        </div>
+        <div id="note">Warming up connections...</div>
+      </div>
+    </div>
+  </div>
+  <div class="bushes"><svg viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70V38c40-30 80-30 120-8 30-26 80-28 110-4 40-30 90-26 120 2 30-24 70-24 100-4 40-28 100-26 130 2 30-22 80-22 110 0 40-30 90-28 120 0 30-22 70-22 100-2 40-26 100-24 130 4 30-20 60-20 80-6V70z" fill="#86b15a"/><path d="M0 70V54c60-18 120-18 180-4 70-20 140-18 210 0 70-18 150-18 220 0 70-20 150-18 220 0 70-18 160-18 230 0 50-12 100-12 140-4V70z" fill="#6f9a48"/></svg></div>
+</section>
+<main>
+  <section class="course">
+    <div class="chead"><h2 id="stitle">BTC-PERP race</h2><div class="call" id="call">The horses are warming up</div></div>
+    <canvas id="track"></canvas>
+    <div class="cfoot"><span>Each horse crosses the line at the moment its venue confirmed the order.</span><span>Slow motion replay · the clock shows real milliseconds</span></div>
+  </section>
+  <div id="verdict"></div>
+
+  <section class="grid2">
+    <div class="panel">
+      <h3 class="ptitle">Live prices <small id="toteT">BTC-PERP</small></h3>
+      <div class="tote" id="tote"></div>
+    </div>
+    <div class="panel">
+      <h3 class="ptitle">Race rules</h3>
+      <ol class="rules">
+        <li><div><b>Same instant</b><p>You pick a side. One order leaves for every venue at the same moment, from the same server, over connections that are already open.</p></div></li>
+        <li><div><b>Real, but harmless</b><p>Each order is priced so that it cannot trade. The venue still has to process it, but no position opens and no fee is paid.</p></div></li>
+        <li><div><b>The clock stops at confirmation</b><p>Timing ends when the venue reports the order as processed, not when it merely says "received".</p></div></li>
+        <li><div><b>Check it yourself</b><p>The DreamDEX order is a transaction on Somnia, linked on the explorer. Exchange orders have no public record, so their rows show the order id and the exchange's own reply. The code is open source.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:18px"><div class="tw">
+    <h3 class="ptitle">Scoreboard <small>your rounds</small></h3>
+    <table>
+      <thead><tr><th>Horse</th><th>Races</th><th>Median time</th><th>Wins</th><th style="text-align:left">Measured as</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div></section>
+
+  <details class="panel">
+    <summary>How each venue is measured</summary>
+    <p>Every venue gets the same treatment wherever it allows it: a real order on the market you picked, sized at the venue's minimum and priced a little away from the market so that it cannot trade. DreamDEX runs on Somnia Tokyo mainnet. On the exchanges the order is immediate-or-cancel, the same path a market order takes, and it is priced inside each exchange's price band (2% away from mark, or less where the band is tighter). The DreamDEX leg is a resting limit order, cancelled right after (untimed), because an IOC order with nothing to match reverts on chain. The exchange accounts are small standard accounts on public API endpoints, with no fee tier upgrades and no colocation. Binance joins once its API key can run from a fixed IP.</p>
+    <div class="tw"><table class="m">
+      <thead><tr><th>Venue</th><th>What we send</th><th>When the clock stops</th><th>Proof you can check</th></tr></thead>
+      <tbody id="method"></tbody>
+    </table></div>
+    <p>The replay is slowed down, and it gives the first milliseconds more screen time than the rest so that a fast finish is still visible. Each horse moves at a steady pace in real time and reaches the line exactly at its venue's confirmation time; the race clock always shows real milliseconds.</p>
+  </details>
+
+  <footer><a id="src" href="https://github.com/emrestay/cex-race" target="_blank" rel="noopener">Source code on GitHub ↗</a></footer>
+  <dialog id="rep"><h3 id="repT">Reply</h3><p class="rw">The record the venue sent back for this order, exactly as received (selected fields).</p><pre id="repB"></pre><p class="rw" id="repW"></p><form method="dialog"><button class="ghost">Close</button></form></dialog>
+</main>
+
+<script>
+'use strict';
+const REPO_URL = 'https://github.com/emrestay/cex-race';
+const now = () => performance.now();
+const $ = s => document.querySelector(s);
+const med = a => { const s = a.filter(x => x != null).sort((x, y) => x - y); if (!s.length) return null; const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const fms = x => x == null ? '·' : Math.round(x).toLocaleString('en-US') + ' ms';
+const fpx = p => { if (p == null) return '·'; const d = p < 1 ? 5 : p < 20 ? 4 : 2; return p.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+const sleep = t => new Promise(r => setTimeout(r, t));
+const FONT = '"Fredoka",ui-rounded,system-ui,sans-serif', MONO = '"JetBrains Mono",ui-monospace,Menlo,monospace';
+let server = null; // set when this page is served with its /api (real orders, measured from the server)
+const ASSET = location.pathname.includes('/public/') ? '' : '/';
+// Race sounds, made in the browser with Web Audio (no audio files): a bugle call at the start, hooves while
+// the horses run, a bell for the winner and a crowd when the result comes up. Off switch in the header.
+const sfx = (() => {
+  let on = true, ctx = null, noiseBuf = null, nextHoof = 0, beat = 0;
+  try { on = localStorage.getItem('perp-race-sound') !== 'off'; } catch {}
+  const ac = () => { if (!on) return null; try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch { return null; } return ctx; };
+  const noise = a => { if (noiseBuf) return noiseBuf; const b = a.createBuffer(1, a.sampleRate, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return (noiseBuf = b); };
+  const tone = (a, f, t0, d, type, vol) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + d + 0.05); };
+  const burst = (a, t0, d, vol, freq, q, type = 'bandpass') => { const sN = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(); sN.buffer = noise(a); f.type = type; f.frequency.value = freq; f.Q.value = q; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.01, d / 4)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); sN.connect(f).connect(g).connect(a.destination); sN.start(t0, Math.random() * 0.5, d + 0.05); };
+  const btn = () => { const b = document.getElementById('snd'); if (b) b.textContent = on ? 'sound on' : 'sound off'; };
+  return {
+    setup() { btn(); const b = document.getElementById('snd'); if (b) b.onclick = () => { on = !on; try { localStorage.setItem('perp-race-sound', on ? 'on' : 'off'); } catch {} btn(); if (on) ac(); }; },
+    fanfare() { const a = ac(); if (!a) return; const t = a.currentTime + 0.03; nextHoof = 0; beat = 0;
+      for (const [f, o, d] of [[392, 0, 0.11], [523, 0.12, 0.11], [659, 0.24, 0.11], [784, 0.36, 0.3], [659, 0.68, 0.11], [784, 0.8, 0.5]]) { tone(a, f, t + o, d, 'square', 0.035); tone(a, f * 2, t + o, d * 0.8, 'triangle', 0.02); } },
+    gallop(running) { const a = ac(); if (!a) return; const now0 = a.currentTime; if (nextHoof < now0) nextHoof = now0 + 0.02;
+      const vol = Math.min(0.5, 0.12 + 0.06 * running);
+      while (nextHoof < now0 + 0.12) { burst(a, nextHoof, 0.06, vol * (beat % 3 === 2 ? 1 : 0.7), 520 + Math.random() * 260, 2.5); nextHoof += [0.075, 0.075, 0.17][beat % 3]; beat++; } },
+    unlock() { ac(); }, // called inside the Long/Short click, so browsers allow the sound that follows
+    state() { return ctx ? ctx.state : 'none'; },
+    bell() { const a = ac(); if (!a) return; const t = a.currentTime + 0.01; tone(a, 1318.5, t, 1.4, 'sine', 0.16); tone(a, 2637, t, 0.9, 'sine', 0.05); tone(a, 1975.5, t + 0.01, 1.1, 'sine', 0.04); },
+    cheer() { const a = ac(); if (!a) return; const t = a.currentTime + 0.02; burst(a, t, 2.2, 0.22, 1100, 0.6); burst(a, t + 0.15, 1.8, 0.12, 2400, 0.8); for (let i = 0; i < 6; i++) burst(a, t + 0.1 + Math.random() * 1.2, 0.05, 0.08, 1800 + Math.random() * 1500, 4); },
+  };
+})();
+
+const STOCKS = { // crypto perps listed on DreamDEX mainnet and on every exchange here (see lib/markets.js)
+  BTC: { pool: '0x143ebd385cc90bd178086a8f432c9084f889ef30', binance: 'BTCUSDT', bybit: 'BTCUSDT', okx: 'BTC-USDT-SWAP', bitget: 'BTCUSDT' },
+  ETH: { pool: '0x440992f9910d635201209deb679f8f0c57a6a758', binance: 'ETHUSDT', bybit: 'ETHUSDT', okx: 'ETH-USDT-SWAP', bitget: 'ETHUSDT' },
+  SOL: { pool: '0x8508a90867806d2118277372d704b97efde055b3', binance: 'SOLUSDT', bybit: 'SOLUSDT', okx: 'SOL-USDT-SWAP', bitget: 'SOLUSDT' },
+  HYPE: { pool: '0x81151ad4cdf422fd660a04accb6693c0486e6ccf', binance: 'HYPEUSDT', bybit: 'HYPEUSDT', okx: 'HYPE-USDT-SWAP', bitget: 'HYPEUSDT' },
+  XRP: { pool: '0x4ac6ac5824cf9de6dfa67d37b431c5d8016360a7', binance: 'XRPUSDT', bybit: 'XRPUSDT', okx: 'XRP-USDT-SWAP', bitget: 'XRPUSDT' },
+  DOGE: { pool: '0x6441273abb267b06e88a62b06e3b2995aade65ee', binance: 'DOGEUSDT', bybit: 'DOGEUSDT', okx: 'DOGE-USDT-SWAP', bitget: 'DOGEUSDT' },
+  BNB: { pool: '0x86818cc4e82013eab08c9dac6573ddf27a8cab6b', binance: 'BNBUSDT', bybit: 'BNBUSDT', okx: 'BNB-USDT-SWAP', bitget: 'BNBUSDT' },
+  ZEC: { pool: '0xfc0f39f888d6d4f56848786cb494ca8c74213b94', binance: 'ZECUSDT', bybit: 'ZECUSDT', okx: 'ZEC-USDT-SWAP', bitget: 'ZECUSDT' },
+};
+let stock = 'BTC';
+
+// color = the venue, coat and mane = its pony; m = [what we send, when the clock stops, proof]
+const VENUES = [
+  { id: 'dreamdex', name: 'DreamDEX', short: 'DreamDEX', badge: 'D', sub: 'Somnia Tokyo mainnet', color: '#8e5cf0', coat: '#d98a4e', mane: '#6b3a1f', kind: 'chain', make: somnia,
+    ws: 'wss://api.tokyo.infra.mainnet.somnia.network/ws', sendWs: 'wss://send.tokyo.infra.mainnet.somnia.network/ws',
+    m: ['A real limit order on Somnia Tokyo mainnet. It rests on the book and is cancelled right after', "The receipt of the order's transaction comes back", 'The transaction, on the Somnia explorer'] },
+  { id: 'binance', name: 'Binance', short: 'Binance', badge: 'B', sub: 'USDT perp', color: '#e0a800', coat: '#c47a45', mane: '#5a3220', kind: 'api', make: binance, ws: 'wss://fstream.binance.com/market/ws', // mark price streams moved to /market (Binance WebSocket change notice)
+    m: ['A real IOC limit order over the REST API, asking for the full result in the reply', "Binance replies with the order's final state", "The order id and Binance's own reply. Orders on an exchange have no public record"] },
+  { id: 'bybit', name: 'Bybit', short: 'Bybit', badge: 'By', sub: 'USDT perp', color: '#f7931a', coat: '#efd9b8', mane: '#a07a52', kind: 'api', make: bybit, ws: 'wss://stream.bybit.com/v5/public/linear',
+    m: ['A real IOC limit order over the REST API', 'The order reaches its final state on the private order stream', "The order id and Bybit's own record of it. Orders on an exchange have no public record"] },
+  { id: 'okx', name: 'OKX', short: 'OKX', badge: 'O', sub: 'USDT perp', color: '#3b3b3b', coat: '#8b5a3c', mane: '#3d2416', kind: 'api', make: okx, ws: 'wss://ws.okx.com/ws/v5/public',
+    m: ['A real IOC order over the REST API', 'The order reaches its final state on the private orders channel', "The order id and OKX's own record of it. Orders on an exchange have no public record"] },
+  { id: 'bitget', name: 'Bitget', short: 'Bitget', badge: 'Bg', sub: 'USDT perp', color: '#1fa6c9', coat: '#e0a96d', mane: '#7a4a26', kind: 'api', make: bitget, ws: 'wss://ws.bitget.com/v2/ws/public',
+    m: ['A real IOC limit order over the REST API', 'The order reaches its final state on the private orders channel', "The order id and Bitget's own record of it. Orders on an exchange have no public record"] },
+];
+
+/* ---------- helpers ---------- */
+class Series {
+  constructor() { this.a = []; }
+  push(p) { if (!(p > 0)) return; const t = now(); this.a.push({ t, p }); while (this.a.length && t - this.a[0].t > 120000) this.a.shift(); }
+  last() { return this.a.length ? this.a[this.a.length - 1].p : null; }
+  clear() { this.a = []; }
+}
+function socket(url, h) {
+  let ws, backoff = 1000;
+  const api = { send(o) { return api.sendRaw(JSON.stringify(o)); }, sendRaw(t) { if (ws && ws.readyState === 1) { ws.send(t); return true; } return false; } };
+  (function connect() {
+    try { ws = new WebSocket(url); } catch (e) { setTimeout(connect, 5000); return; }
+    ws.onopen = () => { backoff = 1000; h.open && h.open(api); };
+    ws.onmessage = e => { let j; try { j = JSON.parse(e.data); } catch { j = { raw: String(e.data) }; } h.message(j, api); }; // plain-text frames ("pong") arrive as { raw }
+    ws.onclose = () => { h.close && h.close(); setTimeout(connect, backoff); backoff = Math.min(backoff * 2, 15000); };
+    ws.onerror = () => { try { ws.close(); } catch {} };
+  })();
+  return api;
+}
+function pinger(send) {
+  let q = [];
+  return {
+    pong() { const w = q.shift(); if (w) w(); }, reset() { q = []; },
+    ping() { return new Promise((res, rej) => {
+      const t = now();
+      const f = () => { clearTimeout(to); res(now() - t); };
+      const to = setTimeout(() => { q = q.filter(x => x !== f); rej(new Error('timeout')); }, 8000);
+      if (!send()) { clearTimeout(to); rej(new Error('connecting')); return; }
+      q.push(f);
+    }); },
+  };
+}
+function base(v) {
+  v.rtts = []; v.arrivals = []; v.waiters = []; v.hist = { api: [], conf: [] }; v.wins = 0; v.err = null; v.warm = false; v.head = null; v.px = new Series();
+  v.onBlock = n => {
+    const t = now(); v.head = n; v.arrivals.push({ t, n });
+    while (v.arrivals.length && t - v.arrivals[0].t > 12000) v.arrivals.shift();
+    const w = v.waiters; v.waiters = []; for (const f of w) f({ n, t });
+  };
+  v.nextBlock = () => new Promise((res, rej) => {
+    const f = b => { clearTimeout(to); res(b); };
+    const to = setTimeout(() => { v.waiters = v.waiters.filter(x => x !== f); rej(new Error('no block in 8 s')); }, 8000);
+    v.waiters.push(f);
+  });
+  v.blockMs = () => { const a = v.arrivals; if (a.length < 3) return null; const dn = a[a.length - 1].n - a[0].n; return dn > 0 ? (a[a.length - 1].t - a[0].t) / dn : null; };
+}
+
+/* ---------- venue adapters ---------- */
+function somnia(v) {
+  let id = 10; const pending = new Map();
+  const handlers = sock => ({
+    open(api) { if (sock === 'api') api.send({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] }); },
+    message(j) {
+      if (j.method === 'eth_subscription') { const h = j.params && j.params.result; if (h && h.number) v.onBlock(parseInt(h.number, 16)); return; }
+      const p = pending.get(j.id); if (p) { pending.delete(j.id); p.f(j); }
+    },
+    close() { for (const [k, p] of pending) if (p.sock === sock) { pending.delete(k); p.f({ error: { message: 'socket closed' } }); } },
+  });
+  const S = { api: socket(v.ws, handlers('api')), send: null };
+  const sockOf = name => S[name] || (S[name] = socket(v.sendWs, handlers('send')));
+  const call = (sock, method, params = [], timeout = 8000) => new Promise((res, rej) => {
+    const i = ++id;
+    const to = setTimeout(() => { pending.delete(i); rej(new Error('timeout')); }, timeout);
+    pending.set(i, { sock, f: j => { clearTimeout(to); j.error ? rej(new Error(j.error.message || 'rpc error')) : res(j.result); } });
+    if (!sockOf(sock).send({ jsonrpc: '2.0', id: i, method, params })) { clearTimeout(to); pending.delete(i); rej(new Error('connecting')); }
+  });
+  v.rpc = (m, p) => call('api', m, p);
+  v.sendRpc = (m, p) => call('send', m, p, 15000);
+  v.ping = async () => { const t = now(); await call('api', 'eth_blockNumber'); return now() - t; };
+  // tryGetMarkPrice() -> (bool ok, uint256 price, 18 decimals)
+  let busy = false;
+  setInterval(async () => {
+    if (busy || document.hidden) return; busy = true; const s = stock;
+    try {
+      const r = await call('api', 'eth_call', [{ to: STOCKS[s].pool, data: '0xa8c485ca' }, 'latest'], 3000);
+      if (s === stock && r && r.length >= 130 && BigInt('0x' + r.slice(2, 66)) !== 0n) v.px.push(Number(BigInt('0x' + r.slice(66, 130)) / 10n ** 12n) / 1e6);
+    } catch {} busy = false;
+  }, 300);
+  v.openSend = () => { sockOf('send'); }; // opened only when the browser burner is in use
+  setInterval(() => { if (S.send) call('send', 'eth_chainId').catch(() => {}); }, 20000);
+}
+// Exchange feeds: each exchange's public market stream gives the mark price shown on the page, and a ping
+// on the same socket gives the browser's network time. Orders are sent only by the race server.
+function binance(v) {
+  let cur = null, id = 0;
+  const s = socket(v.ws, {
+    open() { cur = null; sub(); },
+    message(j) {
+      if (j.e === 'markPriceUpdate') { if (j.s === STOCKS[stock].binance) v.px.push(+j.p); return; }
+      if (j.id != null && Array.isArray(j.result)) P.pong();
+    },
+    close() { P.reset(); },
+  });
+  const P = pinger(() => s.send({ method: 'LIST_SUBSCRIPTIONS', id: ++id }));
+  function sub() { const m = STOCKS[stock].binance.toLowerCase() + '@markPrice@1s'; if (cur === m) return; if (cur) s.send({ method: 'UNSUBSCRIBE', params: [cur], id: ++id }); if (s.send({ method: 'SUBSCRIBE', params: [m], id: ++id })) cur = m; }
+  v.ping = P.ping; v.setStock = sub;
+}
+function bybit(v) {
+  let cur = null;
+  const s = socket(v.ws, {
+    open() { cur = null; sub(); },
+    message(j) {
+      if (j.op === 'pong' || j.ret_msg === 'pong') { P.pong(); return; }
+      if (j.topic === 'tickers.' + STOCKS[stock].bybit && j.data && j.data.markPrice) v.px.push(+j.data.markPrice);
+    },
+    close() { P.reset(); },
+  });
+  const P = pinger(() => s.send({ op: 'ping' }));
+  function sub() { const m = 'tickers.' + STOCKS[stock].bybit; if (cur === m) return; if (cur) s.send({ op: 'unsubscribe', args: [cur] }); if (s.send({ op: 'subscribe', args: [m] })) cur = m; }
+  setInterval(() => { if (!document.hidden && !racing) s.send({ op: 'ping' }); }, 20000);
+  v.ping = P.ping; v.setStock = sub;
+}
+function okx(v) {
+  let cur = null;
+  const s = socket(v.ws, {
+    open() { cur = null; sub(); },
+    message(j) {
+      if (j.raw === 'pong') { P.pong(); return; }
+      if (j.arg && j.arg.channel === 'mark-price' && Array.isArray(j.data)) for (const d of j.data) if (d.instId === STOCKS[stock].okx) v.px.push(+d.markPx);
+    },
+    close() { P.reset(); },
+  });
+  const P = pinger(() => s.sendRaw('ping'));
+  function sub() { const m = STOCKS[stock].okx; if (cur === m) return; if (cur) s.send({ op: 'unsubscribe', args: [{ channel: 'mark-price', instId: cur }] }); if (s.send({ op: 'subscribe', args: [{ channel: 'mark-price', instId: m }] })) cur = m; }
+  v.ping = P.ping; v.setStock = sub;
+}
+function bitget(v) {
+  let cur = null;
+  const s = socket(v.ws, {
+    open() { cur = null; sub(); },
+    message(j) {
+      if (j.raw === 'pong') { P.pong(); return; }
+      if (j.arg && j.arg.channel === 'ticker' && Array.isArray(j.data)) for (const d of j.data) if (d.instId === STOCKS[stock].bitget && d.markPrice) v.px.push(+d.markPrice);
+    },
+    close() { P.reset(); },
+  });
+  const P = pinger(() => s.sendRaw('ping'));
+  const arg = m => ({ instType: 'USDT-FUTURES', channel: 'ticker', instId: m });
+  function sub() { const m = STOCKS[stock].bitget; if (cur === m) return; if (cur) s.send({ op: 'unsubscribe', args: [arg(cur)] }); if (s.send({ op: 'subscribe', args: [arg(m)] })) cur = m; }
+  setInterval(() => { if (!document.hidden && !racing) s.sendRaw('ping'); }, 25000);
+  v.ping = P.ping; v.setStock = sub;
+}
+const listed = v => !(v.id in STOCKS[stock]) || STOCKS[stock][v.id] != null;
+
+/* ---------- DOM ---------- */
+const tote = $('#tote'), tbody = $('#tbody'), chips = $('#chips'), callEl = $('#call');
+VENUES.forEach((v, i) => {
+  base(v); v.make(v); v.no = i + 1; v.ph = i * 1.3;
+  const d = document.createElement('div'); d.innerHTML = `<img class="lg" src="${ASSET}logos/${v.id}${v.id === 'perpl' ? '.svg' : '.png'}" alt="" style="--c:${v.color}"><span>${v.name}</span><b class="num">·</b>`; tote.appendChild(d); v.lg = d.querySelector('b');
+  const mr = document.createElement('tr'); mr.innerHTML = `<td>${v.name}</td>` + v.m.map(c => `<td>${c}</td>`).join(''); $('#method').appendChild(mr);
+  const tr = document.createElement('tr'); tr.innerHTML = `<td><img class="lg" src="${ASSET}logos/${v.id}${v.id === 'perpl' ? '.svg' : '.png'}" alt="" style="--c:${v.color}">${v.name}</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="basis"></td>`; tbody.appendChild(tr); v.row = tr.children;
+});
+loadLogos(); sfx.setup();
+const V = Object.fromEntries(VENUES.map(v => [v.id, v])), dream = V.dreamdex;
+for (const s of Object.keys(STOCKS)) { const b = document.createElement('button'); b.className = 'chip' + (s === stock ? ' on' : ''); b.textContent = s; b.onclick = () => setStock(s); chips.appendChild(b); }
+function setStock(s) {
+  if (racing || s === stock) return; stock = s;
+  for (const b of chips.children) b.classList.toggle('on', b.textContent === s);
+  for (const v of VENUES) { v.px.clear(); v.setStock && v.setStock(); }
+  replay = null;
+  $('#pxl').textContent = s + '-PERP mark on DreamDEX'; $('#stitle').textContent = s + '-PERP race'; $('#toteT').textContent = s + '-PERP'; $('#px').textContent = '...';
+}
+$('#src').href = REPO_URL;
+
+/* ---------- burner wallet: real transaction mode (testnet only) ---------- */
+const burner = { acct: null, bal: 0n, nonce: null, gas: 6000000000n, ready: false, err: null };
+async function initBurner() {
+  try {
+    const m = await import('https://esm.sh/viem@2.21.55/accounts');
+    let pk = null; try { pk = localStorage.getItem('perp-race-burner'); } catch {}
+    if (!pk) { pk = m.generatePrivateKey(); try { localStorage.setItem('perp-race-burner', pk); } catch {} }
+    burner.acct = m.privateKeyToAccount(pk); dream.openSend();
+    for (let i = 0; i < 4; i++) await burner.acct.signTransaction({ chainId: 50321, type: 'eip1559', nonce: i, to: burner.acct.address, value: 0n, gas: 30000n, maxFeePerGas: 1n, maxPriorityFeePerGas: 0n }); // warm-up only, never sent
+    refreshBurner(); setInterval(refreshBurner, 8000);
+  } catch (e) { burner.err = e.message; }
+  paintBurner();
+}
+async function refreshBurner() {
+  if (!burner.acct || racing || document.hidden) return;
+  try {
+    const a = burner.acct.address;
+    const [b, n, g] = await Promise.all([dream.rpc('eth_getBalance', [a, 'latest']), dream.rpc('eth_getTransactionCount', [a, 'pending']), dream.rpc('eth_gasPrice')]);
+    burner.bal = BigInt(b); burner.gas = BigInt(g); const nn = Number(BigInt(n)); if (burner.nonce == null || nn > burner.nonce) burner.nonce = nn;
+    burner.ready = burner.bal > 30000n * burner.gas * 2n * 3n;
+  } catch {}
+  paintBurner();
+}
+function paintBurner() {
+  const el = $('#burner'); if (!el) return;
+  if (burner.err) { el.textContent = 'Real transaction mode unavailable: ' + burner.err; return; }
+  if (!burner.acct) return;
+  const bal = Number(burner.bal / 10n ** 12n) / 1e6;
+  el.innerHTML = `<b>DreamDEX real transaction mode: ${burner.ready ? 'ON' : 'OFF'}.</b> This page made a throwaway testnet wallet that lives only in this browser. Send it a little Somnia Tokyo testnet STT and every round sends a real transaction from it.<br>Address: <b class="num">${burner.acct.address}</b><button class="copy" id="cp">copy</button> · Balance: <b class="num">${bal} STT</b>`;
+  const cp = $('#cp'); if (cp) cp.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(burner.acct.address); cp.textContent = 'copied'; };
+  if (!server) { const p = $('#pReal'); p.textContent = 'real tx: ' + (burner.ready ? 'on' : 'off'); p.classList.toggle('on', burner.ready); }
+}
+async function realTx() {
+  const a = burner.acct, nonce = burner.nonce++;
+  const raw = await a.signTransaction({ chainId: 50321, type: 'eip1559', nonce, to: a.address, value: 0n, gas: 30000n, maxFeePerGas: burner.gas * 2n, maxPriorityFeePerGas: 0n });
+  return dream.sendRpc('eth_sendRawTransactionSync', [raw]);
+}
+
+/* ---------- background sampling ---------- */
+let racing = false, round = null, replay = null, raceNo = 0;
+async function sample(v) {
+  try { const t = await v.ping(); if (v.warm) { v.rtts.push(t); if (v.rtts.length > 12) v.rtts.shift(); } v.warm = true; v.err = null; }
+  catch (e) { v.err = e.message; }
+}
+function sampleAll() { if (document.hidden || racing) return; VENUES.forEach((v, i) => { if (!v.serverOnly) setTimeout(() => { if (!racing) sample(v); }, i * 110); }); }
+setTimeout(sampleAll, 700); setTimeout(sampleAll, 1900); setInterval(sampleAll, 3000);
+
+function paintText() {
+  const p = dream.px.last() ?? V.binance.px.last(); $('#px').textContent = p ? '$' + fpx(p) : '...';
+  for (const v of VENUES) {
+    const s = fpx(v.px.last());
+    if (s !== v.lg.textContent) { v.lg.textContent = s; v.lg.classList.add('tick'); clearTimeout(v.tk); v.tk = setTimeout(() => v.lg.classList.remove('tick'), 280); }
+    const n = v.hist.api.length;
+    v.row[1].textContent = n || '·';
+    v.row[2].textContent = v.hist.conf.length ? (v.lastBasis === 'docs' ? '≈ ' : '') + fms(med(v.hist.conf)) : (n ? 'not observable' : '·');
+    v.row[3].textContent = v.hist.conf.length ? v.wins : '·';
+    v.row[4].textContent = n ? tagOf({ basis: v.lastBasis, kind: v.lastKind })[1] : '·';
+  }
+  const live = VENUES.filter(v => (v.warm && !v.err) || (v.serverOnly && server)).length;
+  const pl = $('#pLive'); pl.innerHTML = `<b>${live}/${VENUES.length}</b> venues live`; pl.classList.toggle('on', live === VENUES.length);
+  if (!round && !racing) $('#note').textContent = live < VENUES.length ? `Warming up connections: ${live}/${VENUES.length} ready` : 'Ready. Pick a side.';
+}
+setInterval(paintText, 250);
+
+/* ---------- the track ---------- */
+const dpr = Math.min(2, window.devicePixelRatio || 1);
+const trackEl = $('#track');
+const RANK = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
+const NOSE = 41, TAIL = 38, PONY_H = 66; // pony drawing extents, in pony units
+function fit(c) {
+  const r = c.getBoundingClientRect(), W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return { x, w: r.width, h: r.height };
+}
+function rr(x, X, Y, W, H, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + W, Y, X + W, Y + H, r); x.arcTo(X + W, Y + H, X, Y + H, r); x.arcTo(X, Y + H, X, Y, r); x.arcTo(X, Y, X + W, Y, r); x.closePath(); }
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16), m = c => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f)));
+  return `rgb(${m(n >> 16)},${m(n >> 8 & 255)},${m(n & 255)})`;
+}
+function layout(w, h) {
+  const mob = w < 640, top = 58, bot = 8, LH = (h - top - bot) / VENUES.length;
+  const s = Math.min(1.5, LH * (mob ? 0.95 : 1.06) / PONY_H), CW = mob ? 92 : 196, x0 = CW + 12 + (NOSE + TAIL) * s;
+  const R = mob ? 58 : 190, xf = w - R;
+  return { mob, top, bot, LH, s, CW, x0, xf, R };
+}
+// Horse, track and fence art from Chain Derby by SmoothBot (https://github.com/SmoothBot/chain-derby, MIT License).
+const LOGO = {}; // each venue's own app icon, used only to identify it (see public/logos/CREDITS.txt)
+function loadLogos() { for (const v of VENUES) { const im = new Image(); im.onload = () => { LOGO[v.id] = im; }; im.src = ASSET + 'logos/' + v.id + (v.id === 'perpl' ? '.svg' : '.png'); } }
+function logoCircle(x, v, cx, cy, r) { // draws the venue logo in a circle, or the colored letter until it loads
+  const im = LOGO[v.id];
+  if (!im) { x.beginPath(); x.arc(cx, cy, r, 0, 6.3); x.fillStyle = v.color; x.fill(); x.fillStyle = '#fff'; x.font = `700 ${Math.round(r * 0.85)}px ` + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(v.badge, cx, cy + r * 0.05); x.textAlign = 'left'; return; }
+  x.save(); x.beginPath(); x.arc(cx, cy, r, 0, 6.3); x.fillStyle = '#fff'; x.fill(); x.clip(); const pad = v.id === 'perpl' ? r * 0.45 : 0; x.drawImage(im, cx - r + pad, cy - r + pad, 2 * (r - pad), 2 * (r - pad)); x.restore();
+  x.beginPath(); x.arc(cx, cy, r, 0, 6.3); x.lineWidth = Math.max(1, r * 0.14); x.strokeStyle = '#fff'; x.stroke();
+}
+const ART = {}; for (const [k, f] of [['horse', 'horse-sprite.webp'], ['track', 'track.webp'], ['fence', 'fence.webp']]) { const im = new Image(); im.onload = () => { ART[k] = im; }; im.src = (location.pathname.includes('/public/') ? '' : '/') + 'derby/' + f; }
+// The sprite has 6 running frames side by side. gait 0 = standing (first frame), 1 = full gallop.
+function drawPony(x, cx, cy, s, v, ph, gait, t) {
+  const im = ART.horse; if (!im) return drawPonyVector(x, cx, cy, s, v, ph, gait, t);
+  const fw = im.width / 6, fh = im.height, h = PONY_H * s * 1.12, w = h * fw / fh, frame = gait > 0.05 ? Math.floor(ph * 0.55) % 6 : 0;
+  const bob = gait > 0.05 ? 0 : -0.8 * Math.abs(Math.sin(t / 600 + v.no)) * s;
+  const left = cx + (NOSE * s) - w * 0.985, top = cy + 26 * s - h + bob; // nose and hooves line up with the vector pony
+  x.drawImage(im, frame * fw, 0, fw, fh, left, top, w, h);
+  logoCircle(x, v, left + w * 0.44, top + h * 0.6, h * 0.1); // venue logo on the saddle cloth
+}
+// A cartoon pony drawn in code: used only until the sprite has loaded.
+function drawPonyVector(x, cx, cy, s, v, ph, gait, t) {
+  const S = Math.sin, g = gait, OL = '#4a2c17', coat = v.coat, far = shade(coat, -0.18), light = shade(coat, 0.45), mane = v.mane;
+  const bob = g > 0 ? -3.2 * g * Math.abs(S(ph)) : -0.8 * Math.abs(S(t / 600 + v.no)); // gallop bounce, or breathing
+  x.save(); x.translate(cx, cy + bob * s); x.scale(s, s); x.lineJoin = 'round'; x.lineCap = 'round';
+  const line = () => { x.strokeStyle = OL; x.lineWidth = 2.4; x.stroke(); };
+  const leg = (hx, a, col) => {
+    const fx = hx + 15 * S(a), fy = 6 + 15 * Math.cos(a);
+    x.strokeStyle = OL; x.lineWidth = 9.6; x.beginPath(); x.moveTo(hx, 6); x.lineTo(fx, fy); x.stroke();
+    x.strokeStyle = col; x.lineWidth = 6; x.beginPath(); x.moveTo(hx, 6); x.lineTo(fx, fy); x.stroke();
+    x.fillStyle = '#5a3a26'; x.beginPath(); x.ellipse(fx + 0.5, fy + 2, 4.6, 3, 0, 0, 6.3); x.fill(); x.strokeStyle = OL; x.lineWidth = 1.8; x.stroke();
+  };
+  const sw = o => g * 0.62 * S(ph + o);
+  // tail
+  const tw = g * 3 * S(ph * 0.8);
+  x.beginPath(); x.moveTo(-19, -7); x.bezierCurveTo(-33, -16 + tw, -42, 0 + tw, -30, 9 + tw); x.bezierCurveTo(-34, 0, -27, -4, -18, -2); x.closePath(); x.fillStyle = mane; x.fill(); line();
+  leg(9, sw(2.2), far); leg(-13, sw(0.9), far); // far legs
+  x.beginPath(); x.ellipse(0, -1, 22, 14, 0, 0, 6.3); x.fillStyle = coat; x.fill(); line(); // body
+  leg(13, sw(0), coat); leg(-9, sw(3.4), coat); // near legs
+  x.beginPath(); x.ellipse(0, -1, 22, 14, 0, 3.6, 5.9); x.strokeStyle = OL; x.lineWidth = 2.4; x.stroke(); // body top edge over the legs
+  rr(x, -9, -10, 16, 15, 4); x.fillStyle = '#fff'; x.fill(); line(); // saddle cloth
+  x.beginPath(); x.arc(-1, -2.5, 5, 0, 6.3); x.fillStyle = v.color; x.fill();
+  x.fillStyle = '#fff'; x.font = '700 7.5px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(v.badge, -1, -2.2); x.textAlign = 'left';
+  // mane behind the head
+  x.fillStyle = mane; for (const [mx, my, mr] of [[9, -31, 7], [6, -24, 6.5], [6, -16, 6]]) { x.beginPath(); x.arc(mx, my, mr, 0, 6.3); x.fill(); line(); }
+  // head
+  x.beginPath(); x.ellipse(20, -22, 15.5, 14, -0.15, 0, 6.3); x.fillStyle = coat; x.fill(); line();
+  for (const ex of [13, 20]) { x.beginPath(); x.moveTo(ex - 3.5, -32); x.quadraticCurveTo(ex - 1, -45, ex + 4, -33); x.closePath(); x.fillStyle = coat; x.fill(); line(); } // ears
+  x.beginPath(); x.ellipse(31, -14, 10, 8, -0.1, 0, 6.3); x.fillStyle = light; x.fill(); line(); // muzzle
+  x.fillStyle = OL; x.beginPath(); x.ellipse(36.5, -15.5, 1.3, 1.7, 0, 0, 6.3); x.fill(); // nostril
+  x.beginPath(); x.arc(31.5, -11, 3.6, 0.35, 2.4); x.strokeStyle = OL; x.lineWidth = 1.7; x.stroke(); // smile
+  const blink = g < 0.3 && ((t / 90 + v.no * 7) % 46) < 1.4;
+  if (blink) { x.beginPath(); x.moveTo(21, -25); x.quadraticCurveTo(24, -23, 27, -25); x.lineWidth = 2; x.stroke(); }
+  else { x.fillStyle = '#2b1a10'; x.beginPath(); x.ellipse(24, -25.5, 3.3, 4.3, 0, 0, 6.3); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(25.2, -27.3, 1.3, 0, 6.3); x.fill(); }
+  x.fillStyle = 'rgba(247,120,150,.45)'; x.beginPath(); x.ellipse(19, -16, 4.2, 2.6, 0, 0, 6.3); x.fill(); // blush
+  x.fillStyle = mane; x.beginPath(); x.ellipse(15, -34, 6, 4.5, -0.5, 0, 6.3); x.fill(); line(); // forelock
+  x.restore();
+}
+function rosette(x, cx, cy, k, place) {
+  const col = ['', '#f5c542', '#cfd6e0', '#e3a26a'][place] || '#e6ddd0';
+  x.save(); x.translate(cx, cy); x.scale(k, k);
+  x.fillStyle = shade(col, -0.15); x.beginPath(); x.moveTo(-5, 4); x.lineTo(-9, 20); x.lineTo(-4, 16); x.lineTo(-1, 21); x.lineTo(0, 5); x.fill();
+  x.beginPath(); x.moveTo(5, 4); x.lineTo(9, 20); x.lineTo(4, 16); x.lineTo(1, 21); x.lineTo(0, 5); x.fill();
+  x.fillStyle = col; for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; x.beginPath(); x.arc(Math.cos(a) * 8, Math.sin(a) * 8, 4.2, 0, 6.3); x.fill(); }
+  x.beginPath(); x.arc(0, 0, 8, 0, 6.3); x.fillStyle = '#fff'; x.fill(); x.strokeStyle = '#4a2c17'; x.lineWidth = 1.6; x.stroke();
+  x.fillStyle = '#4a2c17'; x.font = '700 9px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(place), 0, 0.5); x.textAlign = 'left';
+  x.restore();
+}
+// Replay clock: the first milliseconds get more screen time (exponent p), and the clock shows real time.
+function simMs(rp, t) {
+  const e = (t - rp.start - rp.pre) / rp.run;
+  return e <= 0 ? 0 : e >= 1 ? rp.T : rp.T * Math.pow(e, rp.p);
+}
+// fixed hoof-print speckles for the dirt
+const SPECK = Array.from({ length: 160 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 997) / 997]);
+let lastT = now();
+function drawTrack(t) {
+  const dt = Math.min(64, t - lastT); lastT = t;
+  const { x, w, h } = fit(trackEl), L = layout(w, h), run = L.xf - L.x0;
+  // grass strip and fence
+  x.fillStyle = '#9cc96b'; x.fillRect(0, 0, w, L.top);
+  if (ART.fence) { const fh = L.top, fw = ART.fence.width * fh / ART.fence.height; for (let fx = 0; fx < w; fx += fw - 1) x.drawImage(ART.fence, fx, 0, fw, fh); } else {
+  x.fillStyle = '#8bbb5b'; for (let gx = 0; gx < w; gx += 22) { x.beginPath(); x.ellipse(gx + 8, L.top - 4, 9, 4, 0, 0, 6.3); x.fill(); }
+  x.fillStyle = '#fffaf0'; x.strokeStyle = 'rgba(74,44,23,.25)'; x.lineWidth = 1;
+  rr(x, 0, 14, w, 7, 3.5); x.fill(); rr(x, 0, 30, w, 7, 3.5); x.fill();
+  for (let px = 26; px < w; px += 88) { rr(x, px, 8, 11, 44, 5); x.fill(); x.stroke(); }
+  }
+  // dirt lanes
+  x.fillStyle = '#e2b07a'; x.fillRect(0, L.top, w, h - L.top);
+  if (ART.track) { const th = L.LH, tw = ART.track.width * th / ART.track.height; for (let i = 0; i < VENUES.length; i++) for (let tx = 0; tx < w; tx += tw - 1) x.drawImage(ART.track, tx, L.top + i * L.LH, tw, th); } else {
+  x.fillStyle = 'rgba(160,100,50,.16)'; for (const [a, b] of SPECK) { x.beginPath(); x.ellipse(L.CW + a * (w - L.CW), L.top + 6 + b * (h - L.top - 12), 2.4, 1.4, 0, 0, 6.3); x.fill(); }
+  for (let i = 0; i <= VENUES.length; i++) { const y = L.top + i * L.LH; x.fillStyle = 'rgba(255,248,232,.9)'; x.fillRect(0, y - 1.5, w, 3); }
+  }
+  // finish line, checkered
+  const sq = 6; for (let y = L.top, k = 0; y < h - L.bot; y += sq, k++) { x.fillStyle = k % 2 ? '#3b2a1e' : '#fff'; x.fillRect(L.xf - sq, y, sq, sq); x.fillStyle = k % 2 ? '#fff' : '#3b2a1e'; x.fillRect(L.xf, y, sq, sq); }
+  // finish flag on the grass
+  x.fillStyle = '#7a5a3a'; x.fillRect(L.xf - 1.5, 4, 3, L.top - 6);
+  for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) { x.fillStyle = (a + b) % 2 ? '#3b2a1e' : '#fff'; x.fillRect(L.xf + 1.5 + a * 7, 5 + b * 7, 7, 7); }
+
+  const rp = replay, rd = rp && rp.rd, ms = rp ? simMs(rp, t) : 0;
+  // race clock
+  { const txt = rp ? String(Math.round(ms)).padStart(4, '0') + ' ms' : racing ? '.... ms' : '0000 ms'; x.font = '700 14px ' + MONO; const tw = x.measureText(txt).width;
+    x.fillStyle = '#fff'; rr(x, 8, L.top - 50 + 18, tw + 18, 24, 12); x.fill(); x.fillStyle = '#e0952b'; x.textBaseline = 'middle'; x.fillText(txt, 17, L.top - 20);
+    if (rp && !L.mob && t - rp.start < rp.pre + rp.run) { x.font = '700 12px ' + FONT; const sw2 = x.measureText('SLOW-MO REPLAY').width + 16; x.fillStyle = '#f7a8c4'; rr(x, tw + 32, L.top - 32, sw2, 24, 12); x.fill(); x.fillStyle = '#fff'; x.fillText('SLOW-MO REPLAY', tw + 40, L.top - 20); } }
+
+  VENUES.forEach((v, i) => {
+    const y = L.top + i * L.LH, cy = y + L.LH / 2 + 6 * L.s, r = rd ? rd.res[v.id] : null;
+    let nose = L.x0, gait = 0, place = 0, status = null, scol = '#8a7563';
+    if (!listed(v) && !(rp && r && !r.unlisted)) status = 'not listed for ' + stock;
+    else if (!rp) { status = racing ? 'on its way...' : (v.warm && !v.err) || (v.serverOnly && server) ? 'ready' : v.err ? 'unreachable' : 'warming up'; if (racing) nose = L.x0 + Math.sin(t / 90 + i * 2) * 1.5; }
+    else if (r) {
+      if (r.unlisted) status = 'not listed for ' + rd.stock;
+      else if (r.api == null) status = 'no answer';
+      else if (r.conf != null) {
+        nose = L.x0 + run * Math.min(1, ms / Math.max(1, r.conf)); gait = ms > 0 ? 1 : 0; status = ms > 0 ? 'running...' : 'in the gate';
+        if (ms >= r.conf) {
+          if (rp.fin[v.id] == null) { rp.fin[v.id] = t; if (rd.rank[v.id] === 1) { rp.flashAt = t; sfx.bell(); } }
+          const d = t - rp.fin[v.id]; nose = Math.min(w - 6, L.xf + L.R * 0.72) * (1 - Math.exp(-d / 260)) + L.xf * Math.exp(-d / 260); gait = Math.exp(-d / 520);
+          place = rd.rank[v.id]; status = RANK[place] + ' · ' + fms(r.conf); scol = place === 1 ? '#c98a00' : '#3b2a1e';
+        }
+      } else { // answered, but never reported a final state: did not finish
+        const e = (t - rp.start - rp.pre) / rp.run; nose = L.x0 + run * Math.min(0.6, ms / (rp.T * 1.7));
+        gait = ms <= 0 ? 0 : e < 1 ? 1 : Math.exp(-(t - rp.start - rp.pre - rp.run) / 500); status = e >= 1 ? 'DNF · no final state' : 'running...';
+      }
+    }
+    if (gait > 0.02) v.ph += dt * 0.026 * (0.35 + 0.65 * gait);
+    if (place === 1 && t - rp.fin[v.id] < 2000) { x.fillStyle = `rgba(255,230,120,${(0.45 * (1 - (t - rp.fin[v.id]) / 2000)).toFixed(3)})`; x.fillRect(L.CW, y + 2, w - L.CW, L.LH - 3); }
+    // name card
+    const ch = Math.min(L.LH - 12, L.mob ? 50 : 56), cty = y + (L.LH - ch) / 2;
+    x.save(); x.shadowColor = 'rgba(74,44,23,.18)'; x.shadowOffsetY = 3; x.shadowBlur = 0; x.fillStyle = '#fffdf8'; rr(x, 6, cty, L.CW - 6, ch, 14); x.fill(); x.restore();
+    const ic = L.mob ? 11 : 15, icx = 6 + 8 + ic, icy = cty + ch / 2;
+    logoCircle(x, v, icx, icy, ic);
+    const tx = icx + ic + 8;
+    x.fillStyle = '#3b2a1e'; x.font = `700 ${L.mob ? 12 : 16}px ` + FONT; x.textBaseline = 'alphabetic'; x.fillText(L.mob ? v.short : v.name, tx, icy - 2);
+    if (place === 1) { const nw = x.measureText(L.mob ? v.short : v.name).width; if (!L.mob) { x.fillStyle = '#fff1c9'; rr(x, tx + nw + 6, icy - 15, 30, 16, 8); x.fill(); x.fillStyle = '#a57a12'; x.font = '700 11px ' + FONT; x.fillText('1st', tx + nw + 12, icy - 3); } }
+    x.fillStyle = scol; x.font = `${place ? 700 : 500} ${L.mob ? 10.5 : 12.5}px ` + (place ? MONO : FONT); x.fillText(L.mob && status && status.startsWith('DNF') ? 'DNF' : status || '', tx, icy + 14);
+    drawPony(x, nose - NOSE * L.s, cy, L.s, v, v.ph, gait, t);
+    if (place && place <= 3) rosette(x, nose - 8 * L.s, cy - 44 * L.s, L.s * 1.05, place);
+  });
+  if (rp && rp.flashAt && t - rp.flashAt < 260) { x.fillStyle = `rgba(255,255,255,${(0.6 * (1 - (t - rp.flashAt) / 260)).toFixed(3)})`; x.fillRect(0, 0, w, h); } // photo finish flash
+  callFor(t, ms);
+}
+function callFor(t, ms) {
+  const rp = replay;
+  if (racing && !rp) return setCall("They're in the gate · orders on their way", true);
+  if (!rp) { const live = VENUES.filter(v => (v.warm && !v.err) || (v.serverOnly && server)).length; return setCall(live < VENUES.length ? 'The horses are warming up' : 'Pick a market and a side to start the race', false); }
+  const rd = rp.rd;
+  if (t - rp.start < rp.pre) return setCall('Gates open...', true);
+  const done = VENUES.filter(v => rd.res[v.id].conf != null && ms >= rd.res[v.id].conf).sort((a, b) => rd.res[a.id].conf - rd.res[b.id].conf);
+  if (!done.length) return setCall("And they're off!", true);
+  const w = done[0], ended = t - rp.start >= rp.pre + rp.run;
+  if (ended || done.length === VENUES.filter(v => rd.res[v.id].conf != null).length) {
+    const second = done[1]; return setCall(`${w.name} wins${second ? ' by ' + fms(rd.res[second.id].conf - rd.res[w.id].conf) : ''}!`, false);
+  }
+  if (done.length === 1) return setCall(`${w.name} takes it in ${fms(rd.res[w.id].conf)}!`, true);
+  const l = done[done.length - 1]; return setCall(`${l.name} home ${RANK[done.length]} in ${fms(rd.res[l.id].conf)}`, true);
+}
+function setCall(txt, live) { if (callEl.textContent !== txt) callEl.textContent = txt; callEl.classList.toggle('live', !!live); }
+(function frame() {
+  const t = now();
+  if (!document.hidden) {
+    drawTrack(t);
+    if (replay && t - replay.start > replay.pre && t - replay.start < replay.pre + replay.run) { const running = VENUES.filter(v => replay.rd.res[v.id] && replay.rd.res[v.id].api != null && replay.fin[v.id] == null).length; if (running) sfx.gallop(running); }
+    if (replay && !replay.revealed && t - replay.start >= replay.pre + replay.run + 500) { replay.revealed = true; reveal(replay.rd); } // the result appears only once the race is run
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- the race ---------- */
+function finishRound(rd) {
+  let max = 0; for (const v of VENUES) { const r = rd.res[v.id]; max = Math.max(max, r.api || 0, r.conf || 0, r.blk || 0); }
+  rd.S = Math.max(300, max / 0.66);
+  return max;
+}
+function recordRound(rd) {
+  for (const v of VENUES) {
+    const a = v.px.a, lo = rd.t0 - rd.S; let i0 = 0; for (let k = 0; k < a.length; k++) { if (a[k].t < lo) i0 = k; else break; } rd.pxs[v.id] = a.slice(i0);
+    const r = rd.res[v.id]; if (r.api != null) v.hist.api.push(r.api); if (r.conf != null) v.hist.conf.push(r.conf);
+    v.lastBasis = r.basis || 'none'; v.lastKind = r.kind; v.lastDocs = r.docsMs;
+  }
+  const ranked = VENUES.filter(v => rd.res[v.id].conf != null).sort((a, b) => rd.res[a.id].conf - rd.res[b.id].conf);
+  if (ranked[0]) { rd.winner = ranked[0].id; ranked[0].wins++; }
+  rd.rank = {}; ranked.forEach((v, i) => { rd.rank[v.id] = i + 1; });
+  rd.done = true; round = rd; racing = false;
+  return rd;
+}
+// Server mode: our own function fires real orders and reports what it measured from where it runs.
+async function measureServer(side) {
+  racing = true; replay = null;
+  const size = 0;
+  const rd = { t0: 0, side, stock, size, res: {}, blocks: {}, pxs: {}, S: 600, done: false, winner: null, server: true };
+  $('#note').textContent = 'Orders are on their way...';
+  const dry = /[?&]noreal\b/.test(location.search) ? '&real=0' : '';
+  let j; try { j = await (await fetch(`/api/race?market=${stock}&side=${side}${dry}`, { cache: 'no-store' })).json(); } catch (e) { j = { error: e.message, venues: {} }; }
+  if (j.error === 'busy') { await sleep(4000); try { j = await (await fetch(`/api/race?market=${stock}&side=${side}${dry}`, { cache: 'no-store' })).json(); } catch (e) { j = { error: e.message, venues: {} }; } }
+  for (const v of VENUES) {
+    const s = (j.venues || {})[v.id] || { error: j.error || 'no data' };
+    rd.res[v.id] = { unlisted: !!s.unlisted, api: s.network, blk: s.floor, conf: s.confirmed, basis: s.basis, kind: s.kind, docsMs: s.docsMs, err: s.error, status: s.status, exec: s.execMicros, tx: s.tx, ack: s.ack, maker: s.maker, proof: s.proof, reply: s.reply };
+  }
+  rd.region = j.region; rd.cached = !!(j.cached || j.shared) || (j.at && Date.now() - j.at > 6000); // also true when the CDN served a recent race
+  const max = finishRound(rd); rd.t0 = now() - max - 150;
+  return recordRound(rd);
+}
+async function measure(side) {
+  if (server) return measureServer(side);
+  racing = true; replay = null;
+  const size = 0;
+  const rd = { t0: 0, side, stock, size, res: {}, blocks: {}, pxs: {}, S: 600, done: false, winner: null };
+  for (const v of VENUES) rd.res[v.id] = {};
+  $('#note').textContent = 'Firing...';
+  const order = [...VENUES].sort(() => Math.random() - 0.5);
+  rd.t0 = now();
+  const jobs = order.map(async v => {
+    const r = rd.res[v.id];
+    if (!listed(v)) { r.unlisted = true; return; }
+    try { await v.ping(); r.api = now() - rd.t0; if (v.kind === 'chain') { const b = await v.nextBlock(); r.blk = b.t - rd.t0; r.n = b.n; } }
+    catch (e) { r.err = e.message; }
+  });
+  if (burner.ready) jobs.push((async () => { const r = rd.res.dreamdex; try { const rc = await realTx(); r.real = now() - rd.t0; r.tx = rc && rc.transactionHash; r.rcBlock = rc && rc.blockNumber; r.exec = rc && rc.executionTimeMicros; r.ok = rc && rc.status === '0x1'; } catch (e) { r.realErr = e.message; burner.nonce = null; } })());
+  await Promise.all(jobs);
+  const d = rd.res.dreamdex;
+  if (d.real != null) { d.conf = d.real; d.basis = 'real'; } else if (d.blk != null) { d.conf = d.blk; d.basis = 'block'; }
+  if (d.basis === 'real') d.kind = 'transaction';
+  finishRound(rd);
+  for (const v of VENUES) if (v.kind === 'chain') rd.blocks[v.id] = v.arrivals.filter(a => a.t >= rd.t0 && a.t <= rd.t0 + rd.S).map(a => a.t - rd.t0);
+  return recordRound(rd);
+}
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const shortId = h => { h = String(h); return h.length > 16 ? h.slice(0, 8) + '…' + h.slice(-6) : h; };
+// How a result was obtained, as a short label: [css class, text]
+function tagOf(r) {
+  if (r.basis === 'real') return ['real', r.kind && r.kind !== 'transaction' ? 'real order' : 'real transaction'];
+  if (r.basis === 'docs') return ['docs', 'published figure'];
+  if (r.basis === 'block') return ['docs', 'next block'];
+  return ['none', 'network only'];
+}
+function countUp(el, to) {
+  const t0 = now(), dur = 750;
+  (function step() { const k = Math.min(1, (now() - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(to * e).toLocaleString('en-US'); if (k < 1) requestAnimationFrame(step); })();
+}
+function noteFor(rd) { $('#note').textContent = `${rd.side.toUpperCase()} ${rd.stock}-PERP · each venue's minimum size, priced so it cannot fill`; }
+// The official result: winner, then every runner with its time, margin, how it was measured and its proof.
+function reveal(rd) {
+  sfx.cheer();
+  const el = $('#verdict'), w = rd.winner && V[rd.winner];
+  const head = `<div class="rhead"><span class="t">Race ${rd.no} results <em>· ${esc(rd.stock)}-PERP ${esc(rd.side)}</em></span><span class="stamp">${w ? 'PHOTO FINISH' : 'NO RACE'}</span></div>`;
+  if (!w) { el.innerHTML = `<div class="result">${head}<p class="rfoot">No venue confirmed this round. Check the connection and try again.</p></div>`; return; }
+  const ranked = VENUES.filter(v => rd.res[v.id].conf != null).sort((a, b) => rd.res[a.id].conf - rd.res[b.id].conf), rest = VENUES.filter(v => rd.res[v.id].conf == null);
+  const wc = rd.res[w.id].conf;
+  const proof = (r, v) => { const p = r.proof, rep = r.reply ? ` <button class="rep" data-v="${v.id}" title="What ${esc(v.name)} replied">reply</button>` : ''; if (!p) return `<span class="pf dim">·${rep}</span>`;
+    const lbl = `${p.kind === 'tx' ? 'tx' : 'order'} ${esc(shortId(p.id))}`;
+    return p.url ? `<span class="pf"><a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.where)}">${lbl} ↗</a>${p.short ? ' <small title="' + esc(p.where) + '">few min</small>' : ''}${rep}</span>` : `<span class="pf dim" title="${esc(p.where)}">${lbl}${rep}</span>`; };
+  const row = (v, i, n) => { const r = rd.res[v.id], [cls, txt] = tagOf(r);
+    const time = r.unlisted ? 'not listed' : r.conf != null ? (r.basis === 'docs' ? '≈ ' : '') + fms(r.conf) : r.api != null ? 'DNF' : 'no answer';
+    const mg = n === 1 ? 'winner' : r.conf != null ? '+' + fms(r.conf - wc) : '·';
+    return `<li class="${n === 1 ? 'first' : ''}" style="--c:${v.color};--d:${(0.25 + i * 0.1).toFixed(2)}s"><span class="pos">${n ? RANK[n] : '·'}</span><span class="hn"><img class="lg" src="${ASSET}logos/${v.id}${v.id === 'perpl' ? '.svg' : '.png'}" alt=""><span>${v.name}<small>${esc(v.sub)}</small></span></span><span class="rt num">${time}</span><span class="mg">${mg}</span><span class="tg ${cls}"${r.err ? ` title="${esc(r.err)}"` : ''}>${r.unlisted ? 'not listed' : r.api == null ? 'no answer' : txt}</span>${proof(r, v)}</li>`; };
+  const foot = rd.server ? (rd.cached ? 'This result was reused from a race moments ago.' : '')
+    : rd.res.dreamdex.basis === 'real' ? 'Measured in your browser. A real transaction on Somnia, network time elsewhere.' : 'Measured in your browser. Nothing was signed or sent.';
+  el.innerHTML = `<div class="result">${head}<div class="winner"><span class="cup">🏆</span><span class="nm" style="color:${w.color}">${w.name}</span><span class="tm"><b class="num" id="cnt">0</b><small>ms to confirm your ${esc(rd.side)}</small></span></div><ol class="board">${ranked.map((v, i) => row(v, i, i + 1)).join('')}${rest.map((v, i) => row(v, ranked.length + i, 0)).join('')}</ol>${foot ? `<p class="rfoot">${foot}</p>` : ''}</div>`;
+  countUp($('#cnt'), wc);
+  for (const b of el.querySelectorAll('.rep')) b.onclick = () => { const v = V[b.dataset.v], r = rd.res[v.id]; $('#repT').textContent = v.name + ' replied'; $('#repB').textContent = JSON.stringify(r.reply, null, 2); $('#repW').textContent = r.proof && r.proof.where ? r.proof.where + '.' : ''; $('#rep').showModal(); };
+}
+function lock(on) { for (const b of document.querySelectorAll('.fire,.ghost')) b.disabled = on; }
+let lastSide = 'short';
+async function waitQuotes(maxMs) {
+  const end = now() + maxMs;
+  while (now() < end && VENUES.some(v => listed(v) && !v.serverOnly && !v.px.a.length)) await sleep(100);
+}
+function startReplay(rd) {
+  const confs = VENUES.map(v => rd.res[v.id].conf).filter(c => c != null), apis = VENUES.map(v => rd.res[v.id].api).filter(c => c != null);
+  const max = confs.length ? Math.max(...confs) : apis.length ? Math.max(...apis) * 1.5 : 500, min = confs.length ? Math.min(...confs) : max;
+  const T = Math.max(40, max * 1.03), p = Math.max(1, Math.min(3.2, Math.log(Math.max(1, min) / T) / Math.log(0.2)));
+  sfx.fanfare();
+  replay = { start: now(), pre: 800, run: 6800, T, p, rd, fin: {}, revealed: false, flashAt: null };
+  for (const v of VENUES) v.ph = Math.random() * 6;
+}
+async function go(side, n) {
+  if (racing) return; sfx.unlock(); lastSide = side; lock(true);
+  try {
+    await waitQuotes(3500);
+    $('#verdict').innerHTML = `<div class="wait">${server ? `Sending real orders to ${VENUES.length} venues` : 'Racing'}</div>`;
+    let rd; for (let i = 0; i < n; i++) { rd = await measure(side); rd.no = ++raceNo; $('#raceNo').textContent = 'Race ' + (raceNo + 1); noteFor(rd); if (i < n - 1) await sleep(350); }
+    $('#verdict').innerHTML = '';
+    startReplay(rd);
+    const rp = replay; setTimeout(() => { if (replay === rp && !rp.revealed) { rp.revealed = true; reveal(rd); } }, rp.pre + rp.run + 600); // timers still run in a background tab
+  } finally { lock(false); }
+}
+$('#long').onclick = () => go('long', 1);
+$('#short').onclick = () => go('short', 1);
+$('#x10').onclick = () => go(lastSide, 10);
+function dropVenues(test) {
+  for (let i = VENUES.length - 1; i >= 0; i--) { const v = VENUES[i]; if (!test(v)) continue; VENUES.splice(i, 1); for (const el of [v.lg.parentNode, v.row[0].parentNode]) el.remove(); const m = [...document.querySelectorAll('#method tr')].find(r => r.firstChild.textContent === v.name); if (m) m.remove(); }
+}
+fetch('/api/health', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(h => {
+  if (!h || !h.ok) { dropVenues(v => v.serverOnly); initBurner(); return; }
+  server = h;
+  // A venue the server has no credentials for would only ever show 'did not finish': leave it out of the race.
+  dropVenues(v => { const sv = h.venues && h.venues[v.id]; return v.id !== 'dreamdex' && (!sv || sv.realOrders === false); });
+  { const n = VENUES.length; $('#pLive').innerHTML = `<b>·/${n}</b> venues live`; }
+  const p = $('#pReal'); p.textContent = 'real orders · measured from ' + h.region; p.classList.add('on');
+  $('#kick').textContent = 'Crypto perps · real orders · measured from Tokyo';
+}).catch(() => { dropVenues(v => v.serverOnly); initBurner(); });
+window.__race = { VENUES, V, go, burner, realTx, get round() { return round; } };
+</script>
+</body>
+</html>
